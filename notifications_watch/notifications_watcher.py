@@ -1,18 +1,23 @@
+from threading import Thread
+from time import sleep
+
 import todoist
-import asyncio
 from datetime import datetime, timezone
 
 date_time_format = '%a %d %b %Y %H:%M:%S %z'
 
+
 class NotificationsWatcher:
     api : todoist.TodoistAPI
     enabled: bool
+    thread: Thread
 
     def __init__(self, todoist_api_key:str):
         self.api = todoist.TodoistAPI(todoist_api_key)
         self.enabled = False
+        self.thread = Thread(target=self.run)
 
-    async def run(self):
+    def run(self):
         self.enabled = True
 
         while self.enabled:
@@ -28,11 +33,20 @@ class NotificationsWatcher:
             # we'll have to look for reminders that will be in past within some interval (like 10 minutes
 
             passed_reminders = [
-                reminder for reminder in reminders if aware_now >= datetime.strptime(reminder.data['due_date_utc'], date_time_format)
+                reminder for reminder in reminders if
+                aware_now >= datetime.strptime(reminder.data['due_date_utc'], date_time_format)
             ]
 
             print(passed_reminders)
 
-            await asyncio.sleep(5)
+            sleep(5)
 
             self.enabled = False
+
+    def start(self):
+        self.enabled = True
+        self.thread.start()
+
+    def stop(self):
+        self.enabled = False
+        self.thread.join(5)
