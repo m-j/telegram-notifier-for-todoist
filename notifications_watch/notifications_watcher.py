@@ -2,9 +2,12 @@ from threading import Thread
 from time import sleep
 
 import todoist
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+
+from notifications_watch.pending_notifications_store import PendingNotificationEntry
 
 date_time_format = '%a %d %b %Y %H:%M:%S %z'
+reminder_time_window = timedelta(minutes=10)
 
 
 class NotificationsWatcher:
@@ -34,10 +37,24 @@ class NotificationsWatcher:
 
             passed_reminders = [
                 reminder for reminder in reminders if
-                aware_now >= datetime.strptime(reminder.data['due_date_utc'], date_time_format)
+                aware_now + reminder_time_window >= datetime.strptime(reminder.data['due_date_utc'], date_time_format)
             ]
 
-            print(passed_reminders)
+            user_id = self.api.user.get_id()
+
+            print(f'user_id {user_id}')
+
+            notification_entries = [
+                PendingNotificationEntry(
+                    reminder_id=reminder.data['id'],
+                    recipient=reminder.data['notify_uid'],
+                    due_date=reminder.data['due_date_utc'],
+                    notification_text=self.api.items.get_by_id(reminder.data['item_id']).data['content']
+                                         )
+                for reminder in passed_reminders
+            ]
+
+            print(notification_entries)
 
             sleep(5)
 
