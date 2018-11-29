@@ -4,21 +4,23 @@ from time import sleep
 import todoist
 from datetime import datetime, timezone, timedelta
 
-from notifications_watch.pending_notifications_store import PendingNotificationEntry
+from notifications_watch.pending_notifications_store import PendingNotificationEntry, PendingNotificationsStore
 
 date_time_format = '%a %d %b %Y %H:%M:%S %z'
-reminder_time_window = timedelta(minutes=10)
+reminder_time_window = timedelta(minutes=60)
 
 
 class NotificationsWatcher:
     api : todoist.TodoistAPI
     enabled: bool
     thread: Thread
+    pending_notifications_store: PendingNotificationsStore
 
-    def __init__(self, todoist_api_key:str):
+    def __init__(self, todoist_api_key:str, pending_notifications_store : PendingNotificationsStore):
         self.api = todoist.TodoistAPI(todoist_api_key)
         self.enabled = False
         self.thread = Thread(target=self.run)
+        self.pending_notifications_store = pending_notifications_store
 
     def run(self):
         self.enabled = True
@@ -54,11 +56,9 @@ class NotificationsWatcher:
                 for reminder in passed_reminders
             ]
 
-            print(notification_entries)
+            self.pending_notifications_store.put(set(notification_entries))
 
             sleep(5)
-
-            self.enabled = False
 
     def start(self):
         self.enabled = True
