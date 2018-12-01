@@ -1,5 +1,8 @@
+from concurrent import futures
+from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Thread
 from time import sleep
+from typing import List
 
 import todoist
 from datetime import datetime, timezone, timedelta
@@ -26,7 +29,7 @@ class NotificationsWatcher:
         self.enabled = False
         self.thread = Thread(target=self.run)
 
-    def _sync(self, subscription: Subscription):
+    def _sync(self, subscription: Subscription) -> List[PendingNotificationEntry]:
         api = subscription.todoist_api
 
         sync_response = api.sync()
@@ -59,15 +62,19 @@ class NotificationsWatcher:
             for reminder in passed_reminders
         ]
 
-        self._pending_notifications_store.put(set(notification_entries))
+        # self._pending_notifications_store.put(set(notification_entries))
+        return notification_entries
 
     def run(self):
         self.enabled = True
 
         while self.enabled:
             subs = self._subscriptions_store.get_subscriptions()
-            for sub in subs:
-                self._sync(sub)
+            with ThreadPoolExecutor() as executor:
+                notification_entry_futures = [executor.submit(self._sync, sub) for sub in subs]
+                for f in futures.as_completed(notification_entry_futures):
+                    entries = f.result()
+                    self._pending_notifications_store.put(set(entries))
 
             sleep(5)
 
@@ -78,12 +85,3 @@ class NotificationsWatcher:
     def stop(self):
         self.enabled = False
         self.thread.join(5)
-
-
-# Loop:
-#   Read registered subs = (todoist, telgram)
-#   Foreach sub:
-#       create future that will run sync and retrieve list of notofications
-#
-# !!! Keep in mind that sync is incremental and therefore you want to keep all todoist api object alive between syncs
-# ??? Maybe queue producer/consumre then?

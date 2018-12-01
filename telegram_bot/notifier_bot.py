@@ -2,14 +2,11 @@ import logging
 from typing import List
 
 from telegram import Update, Bot, User, Chat
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, Job
 
 from notifications_watch.pending_notifications_store import PendingNotificationsStore
 from subscriptions.subscriptions_store import SubscriptionsStore, Subscription
 
-
-def help_command(bot, update):
-    update.message.reply_text('Help!')
 
 class NotifierBot:
     _pending_notifications_store: PendingNotificationsStore
@@ -37,20 +34,15 @@ class NotifierBot:
         else:
             update.message.reply_text('usage:\n/sub [todoist_api_key]')
 
-    def run_command(self, bot: Bot, update: Update):
-        """
-        Test command for debugging notification sending process
-        :return: None
-        """
+    def send_notifications_job(self, bot: Bot, job: Job):
         notifications_to_send = self._pending_notifications_store.get()
 
         for notification in notifications_to_send:
-            self._updater.bot.send_message(
+            logging.info(f'Sending notification to chat id {notification.chat_id}')
+            bot.send_message(
                 chat_id=notification.chat_id,
                 text=notification.text
             )
-
-
 
 
     def start(self):
@@ -58,7 +50,8 @@ class NotifierBot:
 
         dp.add_handler(CommandHandler('help', self.help_command))
         dp.add_handler(CommandHandler('sub', self.sub_command, pass_args=True))
-        dp.add_handler(CommandHandler('run', self.run_command))
+
+        dp.job_queue.run_repeating(self.send_notifications_job, interval=10, first=10)
 
         self._updater.start_polling()
         self._updater.idle()
