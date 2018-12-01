@@ -7,8 +7,8 @@ from typing import List, Set
 @dataclass(frozen=True)
 class PendingNotificationEntry:
     reminder_id: int
-    recipient: int
-    notification_text: str
+    chat_id: int
+    text: str
     due_date: datetime
 
 
@@ -19,7 +19,7 @@ class PendingNotificationsStore:
 
     def __init__(self):
         self._notifications = set()
-        self._notifications = set()
+        self._sent = set()
         self._notifications_lock = Lock()
 
     def put(self, new_entries: Set[PendingNotificationEntry]):
@@ -28,8 +28,8 @@ class PendingNotificationsStore:
             print('current notifications: ')
             print(self._notifications)
 
-    def get(self, recipient: int):
+    def get(self) -> Set[PendingNotificationEntry]:
         with self._notifications_lock:
-            notifications_to_send = {n for n in self._notifications if n.recipient == recipient}
+            notifications_to_send = {n for n in self._notifications if n not in self._sent}
             self.sent |= notifications_to_send
             return notifications_to_send
