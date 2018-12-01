@@ -12,7 +12,6 @@ class PendingNotificationEntry:
     due_date: datetime
 
 
-# this should prevent puting same notifications again so they'll not be sent twice
 class PendingNotificationsStore:
     _notifications: Set[PendingNotificationEntry]
     _sent: Set[PendingNotificationEntry]

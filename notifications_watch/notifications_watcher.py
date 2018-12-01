@@ -1,3 +1,4 @@
+import logging
 from concurrent import futures
 from concurrent.futures.thread import ThreadPoolExecutor
 from threading import Thread
@@ -11,7 +12,7 @@ from notifications_watch.pending_notifications_store import PendingNotificationE
 from subscriptions.subscriptions_store import SubscriptionsStore, Subscription
 
 date_time_format = '%a %d %b %Y %H:%M:%S %z'
-reminder_time_window = timedelta(minutes=60)
+reminder_time_window = timedelta(minutes=10)
 
 
 class NotificationsWatcher:
@@ -25,7 +26,6 @@ class NotificationsWatcher:
         self._subscriptions_store = subscriptions_store
         self._pending_notifications_store = pending_notifications_store
 
-        # self.api = todoist.TodoistAPI(todoist_api_key)
         self.enabled = False
         self.thread = Thread(target=self.run)
 
@@ -39,9 +39,6 @@ class NotificationsWatcher:
         reminders = api.reminders.all()
 
         aware_now = datetime.now(timezone.utc)
-
-        # api does not contain reminders from past
-        # we'll have to look for reminders that will be in past within some interval (like 10 minutes
 
         passed_reminders = [
             reminder for reminder in reminders if
@@ -62,7 +59,6 @@ class NotificationsWatcher:
             for reminder in passed_reminders
         ]
 
-        # self._pending_notifications_store.put(set(notification_entries))
         return notification_entries
 
     def run(self):
@@ -73,8 +69,12 @@ class NotificationsWatcher:
             with ThreadPoolExecutor() as executor:
                 notification_entry_futures = [executor.submit(self._sync, sub) for sub in subs]
                 for f in futures.as_completed(notification_entry_futures):
-                    entries = f.result()
-                    self._pending_notifications_store.put(set(entries))
+                    try:
+                        entries = f.result()
+                        self._pending_notifications_store.put(set(entries))
+                    except Exception as ex:
+                        logging.error(f'Failed to sync')
+                        logging.error(ex)
 
             sleep(5)
 
