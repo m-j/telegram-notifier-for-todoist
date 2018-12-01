@@ -11,7 +11,7 @@ reminder_time_window = timedelta(minutes=60)
 
 
 class NotificationsWatcher:
-    api : todoist.TodoistAPI
+    api: todoist.TodoistAPI
     enabled: bool
     thread: Thread
     pending_notifications_store: PendingNotificationsStore
@@ -67,3 +67,12 @@ class NotificationsWatcher:
     def stop(self):
         self.enabled = False
         self.thread.join(5)
+
+
+# Loop:
+#   Read registered subs = (todoist, telgram)
+#   Foreach sub:
+#       create future that will run sync and retrieve list of notofications
+#
+# !!! Keep in mind that sync is incremental and therefore you want to keep all todoist api object alive between syncs
+# ??? Maybe queue producer/consumre then?
