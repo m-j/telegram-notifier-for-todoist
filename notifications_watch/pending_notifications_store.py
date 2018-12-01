@@ -31,5 +31,5 @@ class PendingNotificationsStore:
     def get(self) -> Set[PendingNotificationEntry]:
         with self._notifications_lock:
             notifications_to_send = {n for n in self._notifications if n not in self._sent}
-            self.sent |= notifications_to_send
+            self._sent |= notifications_to_send
             return notifications_to_send

@@ -2,12 +2,14 @@ from dataclasses import dataclass
 from threading import Lock
 from typing import Tuple, List
 import logging
+import todoist
+from todoist import TodoistAPI
 
 
 @dataclass
-class Subcription:
+class Subscription:
     chat_id: int
-    todoist_key: str
+    todoist_api: TodoistAPI
 
 
 class SubscriptionsStore:
@@ -16,7 +18,7 @@ class SubscriptionsStore:
 
     def subscribe(self, chat_id: int, todoist_key: str):
         with self._lock:
-            self._subscriptions.append(Subcription(chat_id, todoist_key))
+            self._subscriptions.append(Subscription(chat_id, TodoistAPI(todoist_key)))
         logging.info(f'User with telegram id {chat_id} subcribed')
 
     def unsubscribe(self, chat_id):
@@ -24,5 +26,5 @@ class SubscriptionsStore:
             self._subscriptions = filter(lambda item: item.chat_id != chat_id, self._subscriptions)
         logging.info(f'User with telegram id {chat_id} unsubcribed')
 
-    def get_subs(self) -> Tuple[Subcription]:
+    def get_subscriptions(self) -> Tuple[Subscription]:
         return tuple(self._subscriptions)

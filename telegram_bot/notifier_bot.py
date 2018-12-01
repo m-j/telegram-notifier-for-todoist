@@ -4,9 +4,8 @@ from typing import List
 from telegram import Update, Bot, User, Chat
 from telegram.ext import Updater, CommandHandler
 
-from notifications_watch.notification_sync_scheduler import NotificationSyncScheduler
 from notifications_watch.pending_notifications_store import PendingNotificationsStore
-from subscriptions.subscriptions_store import SubscriptionsStore, Subcription
+from subscriptions.subscriptions_store import SubscriptionsStore, Subscription
 
 
 def help_command(bot, update):
@@ -38,7 +37,7 @@ class NotifierBot:
         else:
             update.message.reply_text('usage:\n/sub [todoist_api_key]')
 
-    def run_command(self):
+    def run_command(self, bot: Bot, update: Update):
         """
         Test command for debugging notification sending process
         :return: None
