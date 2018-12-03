@@ -1,7 +1,8 @@
 import sys
 import json
 
-def load_api_keys():
+
+def load_config():
     if len(sys.argv) == 2:
         path = sys.argv[1]
         with open(path, 'r') as content_file:

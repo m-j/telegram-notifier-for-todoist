@@ -1,8 +1,9 @@
+import logging
 from dataclasses import dataclass
 from threading import Lock
 from typing import Tuple, List
-import logging
-import todoist
+
+from redis import Redis
 from todoist import TodoistAPI
 
 
@@ -12,11 +13,23 @@ class Subscription:
     todoist_api: TodoistAPI
 
 
+@dataclass
+class SubscriptionDto:
+    chat_id: int
+    todoist_api_key: str
+
+
 class SubscriptionsStore:
+    _redis: Redis
     _subscriptions: List = []
     _lock: Lock = Lock()
 
+    def __init__(self, redis: Redis):
+        self._redis = redis
+
     def subscribe(self, chat_id: int, todoist_key: str):
+        # TODO: check if already subscribed if yes return
+
         with self._lock:
             self._subscriptions.append(Subscription(chat_id, TodoistAPI(todoist_key)))
         logging.info(f'User with telegram id {chat_id} subcribed')
