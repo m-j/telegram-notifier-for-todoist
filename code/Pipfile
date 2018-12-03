@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 todoist-python = "*"
 python-telegram-bot = "*"
+redis = "*"
 
 [dev-packages]
 
