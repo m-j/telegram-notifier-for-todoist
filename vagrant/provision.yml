@@ -5,3 +5,17 @@
       apt:
         name: redis
         state: present
+    - name: shutdown redis service
+      service:
+        name: redis
+        state: stopped
+    - name: copy redis config
+      copy:
+        src: redis.conf
+        dest: /etc/redis/redis.conf
+        owner: root
+        mode: 660
+    - name: shutdown redis service
+      service:
+        name: redis
+        state: started    
