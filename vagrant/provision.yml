@@ -14,7 +14,8 @@
         src: redis.conf
         dest: /etc/redis/redis.conf
         owner: root
-        mode: 660
+        group: redis
+        mode: 0660
     - name: shutdown redis service
       service:
         name: redis
