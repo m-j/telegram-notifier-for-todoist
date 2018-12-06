@@ -11,7 +11,8 @@ import redis
 config = load_config()
 todist_api_key = config['todoist_api_key']
 telegram_token = config['telegram_bot_token']
-redis_connection_string = config["redis"]
+redis_connection_string = config['redis']
+subscriber_password = config['subscriber_password']
 
 logging.basicConfig(level=logging.INFO)
 
@@ -26,7 +27,7 @@ def main():
     notifications_watcher = NotificationsWatcher(pending_notifications_store, subscriptions_store)
     notifications_watcher.start()
 
-    notifier_bot = NotifierBot(telegram_token, subscriptions_store, pending_notifications_store)
+    notifier_bot = NotifierBot(telegram_token, subscriptions_store, pending_notifications_store, subscriber_password)
     notifier_bot.start()
 
 

@@ -9,30 +9,51 @@ from subscriptions.subscriptions_store import SubscriptionsStore, Subscription
 
 
 class NotifierBot:
+    _subscriber_password: str
     _pending_notifications_store: PendingNotificationsStore
     _updater: Updater
     _subscriptions_store: SubscriptionsStore
 
     def __init__(self, telegram_token: str,
                  subriptions_store: SubscriptionsStore,
-                 pending_notifications_store: PendingNotificationsStore):
+                 pending_notifications_store: PendingNotificationsStore,
+                 subscriber_password: str):
         self._updater = Updater(token=telegram_token)
         self._subscriptions_store = subriptions_store
         self._pending_notifications_store = pending_notifications_store
+        self._subscriber_password = subscriber_password
 
     def help_command(self, bot, update):
-        update.message.reply_text('Help!')
+        update.message.reply_text('''
+        USAGE:
+        /sub [todoist_api_key] <notifier_password> - subscribes todoist account for notifications
+        ''')
 
     def sub_command(self, bot: Bot, update: Update, args: List[str]):
         user: User = update.effective_user
         chat: Chat = update.effective_chat
 
-        if len(args) == 1:
+        if not self.check_password(args, update):
+            return
+
+        if 1 <= len(args) <= 2:
             logging.info(f'Received /sub message from user {user.full_name} with chat id {chat.id}')
             self._subscriptions_store.subscribe(chat_id=chat.id, todoist_key=args[0])
             update.message.reply_text(f'{user.full_name}, you\'ve been subscribed for notifications')
         else:
-            update.message.reply_text('usage:\n/sub [todoist_api_key]')
+            update.message.reply_text('usage:\n/sub [todoist_api_key] <password>')
+
+    def check_password(self, args, update):
+        if self._subscriber_password and len(self._subscriber_password) > 0:
+            if len(args) < 2:
+                update.message.reply_text('You have to provide password to subscribe. Check /help command')
+                return False
+
+            if self._subscriber_password != args[1]:
+                update.message.reply_text('Password you have provided is incorrect')
+                return False
+
+        return True
 
     def send_notifications_job(self, bot: Bot, job: Job):
         notifications_to_send = self._pending_notifications_store.get()
@@ -43,7 +64,6 @@ class NotifierBot:
                 chat_id=notification.chat_id,
                 text=notification.text
             )
-
 
     def start(self):
         dp = self._updater.dispatcher
