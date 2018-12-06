@@ -17,7 +17,7 @@ class NotifierBot:
                  subriptions_store: SubscriptionsStore,
                  pending_notifications_store: PendingNotificationsStore):
         self._updater = Updater(token=telegram_token)
-        self._subscriptions_store = SubscriptionsStore()
+        self._subscriptions_store = subriptions_store
         self._pending_notifications_store = pending_notifications_store
 
     def help_command(self, bot, update):

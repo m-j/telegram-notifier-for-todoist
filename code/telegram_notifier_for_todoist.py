@@ -2,7 +2,7 @@ import logging
 
 from notifications_watch.notifications_watcher import NotificationsWatcher
 from notifications_watch.pending_notifications_store import PendingNotificationsStore
-from subscriptions.subscriptions_store import SubscriptionsStore
+from subscriptions.subscriptions_store import SubscriptionsStore, load_subscriptions_store
 from telegram_bot.notifier_bot import NotifierBot
 from utils.create_redis_client import create_redis_client
 from utils.load_api_keys import load_config
@@ -15,10 +15,13 @@ redis_connection_string = config["redis"]
 
 logging.basicConfig(level=logging.INFO)
 
+
 def main():
+    redis_client = create_redis_client(redis_connection_string)
+
     pending_notifications_store = PendingNotificationsStore()
 
-    subscriptions_store = SubscriptionsStore()
+    subscriptions_store = load_subscriptions_store(redis=redis_client)
 
     notifications_watcher = NotificationsWatcher(pending_notifications_store, subscriptions_store)
     notifications_watcher.start()
@@ -27,8 +30,4 @@ def main():
     notifier_bot.start()
 
 
-# main()
-
-redis_client = create_redis_client(redis_connection_string)
-redis_client.lpush('test', 'xxx')
-redis_client.lpush('test', 'yyy')
+main()
