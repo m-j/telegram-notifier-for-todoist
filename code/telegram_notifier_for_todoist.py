@@ -9,7 +9,6 @@ from utils.load_api_keys import load_config
 import redis
 
 config = load_config()
-todist_api_key = config['todoist_api_key']
 telegram_token = config['telegram_bot_token']
 redis_connection_string = config['redis']
 subscriber_password = config['subscriber_password']
