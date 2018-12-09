@@ -26,7 +26,7 @@ class PendingNotificationsStore:
         with self._notifications_lock:
             self._notifications |= new_entries
 
-            if len(self._notifications):
+            if len(self._notifications) > 0:
                 logging.info('Pending notifications')
                 logging.info(self._notifications - self._sent)
 
