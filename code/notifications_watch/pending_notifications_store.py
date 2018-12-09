@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
@@ -24,8 +25,10 @@ class PendingNotificationsStore:
     def put(self, new_entries: Set[PendingNotificationEntry]):
         with self._notifications_lock:
             self._notifications |= new_entries
-            print('current notifications: ')
-            print(self._notifications)
+
+            if len(self._notifications):
+                logging.info('Pending notifications')
+                logging.info(self._notifications - self._sent)
 
     def get(self) -> Set[PendingNotificationEntry]:
         with self._notifications_lock:

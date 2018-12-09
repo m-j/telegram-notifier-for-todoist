@@ -9,7 +9,7 @@
       service:
         name: redis
         state: stopped
-    - name: copy redis config
+    - name: template redis config
       copy:
         src: redis.conf
         dest: /etc/redis/redis.conf
