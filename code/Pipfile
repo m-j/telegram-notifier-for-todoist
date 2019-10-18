@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-todoist-python = "*"
+todoist-python = ">=r8.1.0"
 python-telegram-bot = "*"
 redis = "*"
 

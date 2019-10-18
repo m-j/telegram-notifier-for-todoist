@@ -23,7 +23,9 @@ def load_subscriptions_store(redis: Redis):
         subscription_dicts = [loads(sjs) for sjs in subscription_jsons]
 
         subscriptions = [
-            Subscription(chat_id=sdict['chat_id'], todoist_api=TodoistAPI(sdict['todoist_key']))
+            Subscription(
+                chat_id=sdict['chat_id'],
+                todoist_api=TodoistAPI(token=sdict['todoist_key'], cache=None, api_endpoint='https://api.todoist.com'))
             for sdict in subscription_dicts
         ]
 
@@ -52,7 +54,7 @@ class SubscriptionsStore:
             return
 
         with self._lock:
-            self._subscriptions.append(Subscription(chat_id, TodoistAPI(todoist_key)))
+            self._subscriptions.append(Subscription(chat_id, TodoistAPI(token=todoist_key, cache=None)))
             self._redis.lpush(redis_keys.subscription, dumps({'chat_id': chat_id, 'todoist_key': todoist_key}))
 
         logging.info(f'User with telegram id {chat_id} subcribed')

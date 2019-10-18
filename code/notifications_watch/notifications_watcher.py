@@ -11,7 +11,8 @@ from datetime import datetime, timezone, timedelta
 from notifications_watch.pending_notifications_store import PendingNotificationEntry, PendingNotificationsStore
 from subscriptions.subscriptions_store import SubscriptionsStore, Subscription
 
-date_time_format = '%a %d %b %Y %H:%M:%S %z'
+# date_time_format = '%a %d %b %Y %H:%M:%S'
+date_time_format = '%Y-%m-%dT%H:%M:%S'
 time_window_forward = timedelta(minutes=10)  # look that much in the future
 time_window_backward = timedelta(minutes=10)  # look that much in the past
 
@@ -21,39 +22,27 @@ def is_within_time_window(now, d: datetime):
 
 
 def item_predicate(item: Dict) -> bool:
-    return item.data['due_date_utc'] is not None and item['priority'] > 1 and not item['checked']
+    return 'due' in item.data and item.data['priority'] > 1 and not item.data['checked']
 
 
-def notifications_from_reminders(api: todoist.TodoistAPI, aware_now, chat_id):
-    reminders = api.reminders.all()
-
-    passed_reminders = [
-        reminder for reminder in reminders if
-        (reminder.data['due_date_utc'] is not None) and
-        (aware_now + time_window_forward >= datetime.strptime(reminder.data['due_date_utc'], date_time_format))
-    ]
-    user_id = api.user.get_id()
-    print(f'user_id {user_id}')
-
-    notification_entries = [
-        PendingNotificationEntry(
-            reminder_id=reminder.data['id'],
-            due_date=reminder.data['due_date_utc'],
-            text=api.items.get_by_id(reminder.data['item_id']).data['content'],
-            chat_id=chat_id
-        )
-        for reminder in passed_reminders
-    ]
-    return notification_entries
+def is_item_within_time_window(item, aware_now):
+    if 'T' in item['due']['date']:
+        date_str = item.data['due']['date'].replace('Z', '')
+        return is_within_time_window(aware_now, datetime.strptime(date_str, date_time_format))
+    else:
+        False
 
 
 def notifications_from_items(api: todoist.TodoistAPI, aware_now, chat_id):
     items = api.items.all()
 
-    passed_items = [
+    due_items = [
         item for item in items if
-        item_predicate(item) and
-        is_within_time_window(aware_now, datetime.strptime(item.data['due_date_utc'], date_time_format))
+        item_predicate(item)
+    ]
+
+    passed_items = [
+        item for item in due_items if is_item_within_time_window(item, aware_now)
     ]
 
     user_id = api.user.get_id()
@@ -62,7 +51,7 @@ def notifications_from_items(api: todoist.TodoistAPI, aware_now, chat_id):
     notification_entries = [
         PendingNotificationEntry(
             reminder_id=item.data['id'],
-            due_date=item.data['due_date_utc'],
+            due_date=item.data['due']['date'],
             text=item.data['content'],
             chat_id=chat_id
         )
@@ -78,7 +67,7 @@ def _sync(subscription: Subscription) -> List[PendingNotificationEntry]:
     if 'http_code' in sync_response and sync_response['http_code'] > 300:
         raise Exception('Failed to sync ' + str(sync_response))
 
-    aware_now = datetime.now(timezone.utc)
+    aware_now = datetime.now()
 
     notification_entries = notifications_from_items(api, aware_now, subscription.chat_id)
 
